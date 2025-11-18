@@ -4,106 +4,89 @@
 using namespace std;
 
 void dijkstras(int start, const vector<vector<int>>& matrix){
-    int n = matrix.size();                  //The number of vertices
+    int n = matrix.size();      //The number of vertices
 
-    vector<bool> selected(n, false);        //The array that tracks the vertices that have been selected
-    vector<int> lowDist(n, INT_MAX);        //The array that stores the lowest distance of every vertice
-    vector<int> prevVert(n, -1);            //The array stores the vertice previous to itself
+    vector<bool> selected(n, false);        //Tracks visited vertices
+    vector<int> lowDist(n, INT_MAX);        //Stores shortest known distances
+    vector<int> prevVert(n, -1);            //Stores parent of each vertex
 
     /////////  INITIALIZE  /////////
 
-    int currStartSelected = start;          //The vertice we start with
-
-    selected[start] = true;                 //Setting all arrays indexs' of [start] to initiazlied values
+    selected[start] = true;
     lowDist[start] = 0;
     prevVert[start] = -1;
 
-    int startMinVertice = INT_MAX;          //Tells me where to move selected for next iteration in initialize phase
-    int startMinCost = INT_MAX;             //Tells me what the next vertice's lowDist value is going to be
-
-    for(int i = 0; i < n; i++){             //Two things: 1, it finds the vertice with the smallest edge
-                                            //            2, it sets lowDist[adjacent vertex] and prevDist[adjacent vertex] to its default edge values from the matrix and the previous vertex (start), to both, respectively
-        if(matrix[start][i] == 0 || selected[i] == true) continue;
-
-        if(matrix[start][i] < startMinCost){
-            startMinCost = matrix[start][i];
-            startMinVertice = i;
+    // set initial neighbors of start
+    for(int i = 0; i < n; i++){
+        if(matrix[start][i] != 0){
+            lowDist[i] = matrix[start][i];
+            prevVert[i] = start;
         }
-
-        lowDist[i] = matrix[start][i];
-        prevVert[i] = currStartSelected;
     }
 
     /////////  ITERATION  /////////
 
-    int currSelected = startMinVertice;     //sets the new starting vertex as the vertex found from initialization
+    int currSelected = -1;
+    for(int i = 0; i < n; i++){
+        int best = -1;
+        int bestDist = INT_MAX;
 
-    while (true) {
-
-        selected[currSelected] = true;      //in currSelected, that vertex is now selected, so it won't be traveresable in the future
-
-        for(int j = 0; j < n; j++){         //going thru the row of the selected vertex, in the matrix
-            if(matrix[currSelected][j] == 0 || selected[j] == true) continue;   //if it finds a 0 or it is already selected, skip this entry
-
-            if(matrix[currSelected][j] + lowDist[currSelected] < lowDist[j]){   //if the the new calculated lowest distance is less than the current lowest distance, update that vertex's lowest distance
-                lowDist[j] = matrix[currSelected][j] + lowDist[currSelected];   //<<<^
-                prevVert[j] = currSelected;                                     //also update the previous vertex for that vertex
+        // pick global unselected min-distance vertex
+        for(int v = 0; v < n; v++){
+            if(!selected[v] && lowDist[v] < bestDist){
+                bestDist = lowDist[v];
+                best = v;
             }
         }
 
-        int minNextVert = INT_MAX;          //Store the next vertice to move to
+        if(best == -1) break; // no reachable vertices left
 
-        for(int k = 0; k < n; k++){
-            if(matrix[currSelected][k] == 0 || selected[k] == true) continue;   //if it finds a 0 or it is already selected, skip this entry
+        currSelected = best;
+        selected[currSelected] = true;
 
-            if(minNextVert == INT_MAX){     //if minNextVert is maxed out, just set it to the first adjacent vertex
-                minNextVert = k;
-                continue;
-            }
+        // relax neighbors of currSelected
+        for(int j = 0; j < n; j++){
+            if(matrix[currSelected][j] == 0) continue;
+            if(selected[j]) continue;
 
-            if(lowDist[k] < lowDist[minNextVert]){      //however, if the adjacent vertex's lowDist is less than our least, update it
-                minNextVert = k;
+            if(lowDist[currSelected] + matrix[currSelected][j] < lowDist[j]){
+                lowDist[j] = lowDist[currSelected] + matrix[currSelected][j];
+                prevVert[j] = currSelected;
             }
         }
-        if (minNextVert == INT_MAX) break;  // no more reachable nodes
-
-        currSelected = minNextVert;         //our next vertex to travel to has been set!
     }
 
-    //Print out information !!
+    /////////  PRINT RESULTS  /////////
+
     cout << "Selected: ";
-    for(int x : selected){
-        cout << x << " ";
-    }
+    for(bool x : selected) cout << x << " ";
     cout << endl;
 
     cout << "Low distance: ";
-    for(int y : lowDist){
-        cout << y << " ";
-    }
+    for(int y : lowDist) cout << y << " ";
     cout << endl;
 
     cout << "Prev Node: ";
-    for(int z : prevVert){
-        cout << z << " ";
-    }
+    for(int z : prevVert) cout << z << " ";
     cout << endl;
 }
 
 int main(){
 
     vector<vector<int>> adj = {
-        {0, 4, 0, 0, 0, 10, 0, 0, 0, 0},  // 0
-        {0, 0, 3, 0, 0, 0, 0, 5, 0, 0},   // 1
-        {0, 0, 0, 4, 0, 0, 8, 0, 0, 0},   // 2
-        {0, 0, 0, 0, 2, 0, 0, 0, 7, 0},   // 3
-        {0, 0, 0, 0, 0, 1, 0, 0, 0, 9},   // 4
-        {0, 0, 0, 0, 0, 0, 2, 0, 0, 0},   // 5
-        {0, 0, 0, 0, 0, 0, 0, 1, 0, 6},   // 6
-        {0, 0, 0, 0, 3, 0, 0, 0, 0, 2},   // 7
-        {0, 0, 5, 0, 0, 0, 0, 0, 0, 1},   // 8
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}    // 9
+        {0,6,0,9,0,0,0,0,0,0},
+        {0,0,5,0,3,0,0,0,0,0},
+        {0,0,0,2,0,7,0,0,0,0},
+        {0,0,0,0,4,0,0,0,8,0},
+        {0,0,0,0,0,1,0,0,0,6},
+        {0,0,0,0,0,0,3,0,0,0},
+        {0,0,0,0,0,0,0,2,0,9},
+        {0,0,0,0,0,0,0,0,4,0},
+        {0,0,0,0,0,0,0,0,0,2},
+        {0,0,0,0,0,0,0,0,0,0}
     };
+
+
 
 
 
